@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Tracker">
+<meta name="theme-color" content="#0f0f1a">
+<title>My Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #16213e;
+    --accent1: #e8b4b8;   /* dusty rose - exercise */
+    --accent2: #9bb8d4;   /* steel blue - study */
+    --accent3: #b8d4b8;   /* sage - complete */
+    --gold: #d4af7a;
+    --text: #f0ece4;
+    --text-muted: #8a8a9a;
+    --border: rgba(255,255,255,0.07);
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 52px 24px 24px;
+    background: linear-gradient(180deg, #1a0f2e 0%, var(--bg) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(232,180,184,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-date {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .header-title em {
+    font-style: italic;
+    color: var(--accent1);
+  }
+  .streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(212,175,122,0.12);
+    border: 1px solid rgba(212,175,122,0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: var(--gold);
+    margin-top: 12px;
+    font-weight: 500;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent1); }
+  .tab:nth-child(2).active { border-bottom-color: var(--accent2); }
+  .tab:nth-child(3).active { border-bottom-color: var(--gold); }
+
+  /* PANELS */
+  .panel { display: none; padding: 20px 24px 100px; }
+  .panel.active { display: block; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 20px 0 12px;
+  }
+
+  /* PROGRESS RING */
+  .progress-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .progress-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent1);
+    transform-origin: left;
+    transform: scaleX(var(--prog, 0));
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .progress-card.study::after { background: var(--accent2); }
+  .progress-card-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .progress-card-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .progress-card-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    opacity: 0.6;
+  }
+
+  /* TASK CARD */
+  .task-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .task-card:active { transform: scale(0.98); }
+  .task-card.done {
+    border-color: rgba(184,212,184,0.2);
+    background: rgba(184,212,184,0.05);
+  }
+  .task-card.done .task-name { text-decoration: line-through; opacity: 0.5; }
+  .task-card.done .task-time { opacity: 0.4; }
+
+  .check-circle {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: transparent;
+  }
+  .task-card.done .check-circle {
+    background: var(--accent3);
+    border-color: var(--accent3);
+  }
+  .check-circle svg { opacity: 0; transition: opacity 0.2s; }
+  .task-card.done .check-circle svg { opacity: 1; }
+
+  .task-info { flex: 1; }
+  .task-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .task-time { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .task-type {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .type-exercise { background: rgba(232,180,184,0.12); color: var(--accent1); }
+  .type-study { background: rgba(155,184,212,0.12); color: var(--accent2); }
+
+  /* WEEKLY VIEW */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .week-nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 16px;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .week-nav-btn:active { background: var(--surface2); }
+  .week-nav-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .week-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .week-day-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .week-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    position: relative;
+    cursor: pointer;
+  }
+  .week-dot { cursor: pointer; transition: all 0.18s; }
+  .week-dot:active { transform: scale(0.9); }
+  .week-dot.today { border-color: var(--accent1); color: var(--accent1); }
+  .week-dot.selected { border-color: #fff; color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+  .week-dot.complete { background: var(--accent3); border-color: var(--accent3); color: #0f2010; }
+  .week-dot.partial { background: var(--gold); border-color: var(--gold); color: #1a1000; }
+
+  /* STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .stat-box {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    display: block;
+  }
+  .stat-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.5px; }
+
+  /* NOTES */
+  .note-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    min-height: 90px;
+    margin-bottom: 10px;
+  }
+  .note-input:focus { border-color: rgba(255,255,255,0.15); }
+  .note-input::placeholder { color: var(--text-muted); }
+
+  .save-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent1), #c896a0);
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    color: #1a0a0d;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+  }
+  .save-btn:active { opacity: 0.85; }
+  .save-btn.study-btn {
+    background: linear-gradient(135deg, var(--accent2), #7a9ab8);
+    color: #0a101a;
+  }
+
+  /* MOOD / ENERGY */
+  .energy-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .energy-btn {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 6px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .energy-btn.selected {
+    border-color: var(--gold);
+    background: rgba(212,175,122,0.1);
+  }
+  .energy-label { font-size: 9px; display: block; margin-top: 3px; letter-spacing: 0.5px; color: var(--text-muted); }
+
+  /* LOG HISTORY */
+  .log-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .log-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .log-dot.exercise { background: var(--accent1); }
+  .log-dot.study { background: var(--accent2); }
+  .log-text { font-size: 13px; color: var(--text); flex: 1; }
+  .log-time { font-size: 11px; color: var(--text-muted); }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: rgba(15,15,26,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 24px;
+    z-index: 100;
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .nav-btn.active { color: var(--accent1); }
+  .nav-btn:nth-child(2).active { color: var(--accent2); }
+  .nav-btn:nth-child(3).active { color: var(--gold); }
+  .nav-icon { font-size: 22px; line-height: 1; }
+
+  /* ANIMATIONS */
+  /* CALENDAR SYNC */
+  .cal-sync-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 4px;
+  }
+  .cal-sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .cal-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cal-dot.disconnected { background: var(--text-muted); }
+  .cal-dot.connected { background: var(--accent3); }
+  .cal-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
+  .cal-dot.error { background: var(--accent1); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  .cal-url-row {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .cal-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    outline: none;
+    min-width: 0;
+  }
+  .cal-input:focus { border-color: rgba(255,255,255,0.2); }
+  .cal-connect-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cal-connect-btn.full { width: 100%; }
+  .cal-connect-btn.outline { background: transparent; color: var(--text-muted); font-size: 12px; }
+  .cal-connect-btn:active { opacity: 0.7; }
+  .cal-help {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .cal-help em { color: var(--accent2); font-style: normal; }
+  .cal-events-list { display: flex; flex-direction: column; gap: 6px; }
+  .cal-event-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent2);
+    animation: fadeUp 0.3s ease both;
+  }
+  .cal-event-item.exercise { border-left-color: var(--accent1); }
+  .cal-event-item.conflict { border-left-color: var(--gold); }
+  .cal-event-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; margin-top: 1px; }
+  .cal-event-title { font-size: 13px; color: var(--text); flex: 1; }
+  .cal-event-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    font-weight: 600; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .tag-study { background: rgba(155,184,212,0.15); color: var(--accent2); }
+  .tag-exercise { background: rgba(232,180,184,0.15); color: var(--accent1); }
+  .tag-conflict { background: rgba(212,175,122,0.15); color: var(--gold); }
+  .tag-other { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .cal-sync-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cal-last-sync { font-size: 11px; color: var(--text-muted); }
+  .cal-resync-btn {
+    font-size: 11px; color: var(--accent2); background: none; border: none;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; padding: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .panel.active .task-card,
+  .panel.active .progress-card,
+  .panel.active .stat-box {
+    animation: fadeUp 0.3s ease both;
+  }
+  .panel.active .task-card:nth-child(2) { animation-delay: 0.04s; }
+  .panel.active .task-card:nth-child(3) { animation-delay: 0.08s; }
+  .panel.active .task-card:nth-child(4) { animation-delay: 0.12s; }
+  .panel.active .task-card:nth-child(5) { animation-delay: 0.16s; }
+  .panel.active .task-card:nth-child(6) { animation-delay: 0.20s; }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    animation: rippleAnim 0.5s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim {
+    from { transform: scale(0); opacity: 1; }
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  .completed-msg {
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+    color: var(--accent3);
+    letter-spacing: 0.5px;
+  }
+</style>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- config.js holds your API credentials — never commit this file to GitHub -->
+  <script src="config.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-date" id="headerDate"></div>
+  <div class="header-title">Good morning,<br><em>let's crush it today.</em></div>
+  <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span> day streak</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick=\"switchTab('today')\">Today</div>
+  <div class="tab" onclick=\"switchTab('study')\">Study</div>
+  <div class="tab" onclick=\"switchTab('progress')\">Progress</div>
+</div>
+
+<!-- TODAY PANEL -->
+<div class="panel active" id="panel-today">
+
+  <div class="section-label">Overview</div>
+  <div class="progress-summary">
+    <div class="progress-card" id="exerciseCard" style="--prog:0">
+      <div class="progress-card-num" id="exerciseDone">0</div>
+      <div class="progress-card-label">Exercise done</div>
+      <div class="progress-card-sub" id="exerciseGoal">of 1 session</div>
+    </div>
+    <div class="progress-card study" id="studyCard" style="--prog:0">
+      <div class="progress-card-num" id="studyDone">0</div>
+      <div class="progress-card-label">Study blocks</div>
+      <div class="progress-card-sub" id="studyGoal">of 2 blocks</div>
+    </div>
+  </div>
+
+  <div class="section-label">Week — tap a day to view its plan</div>
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick="shiftWeek(-1, 'today')">&#8249;</button>
+    <span class="week-nav-label" id="weekNavLabelToday"></span>
+    <button class="week-nav-btn" onclick="shiftWeek(1, 'today')">&#8250;</button>
+  </div>
+  <div class="week-grid" id="weekGridToday"></div>
+
+  <div class="section-label" id="todayCalLabel" style="display:none">Today on Calendar</div>
+  <div id="todayCalEvents"></div>
+
+  <div class="section-label">Exercise</div>
+  <div id="exerciseTasks"></div>
+
+  <div class="section-label">How's your energy?</div>
+  <div class="energy-row" id="energyRow">
+    <button class="energy-btn" onclick="setEnergy(1, this)">😴<span class="energy-label">LOW</span></button>
+    <button class="energy-btn" onclick="setEnergy(2, this)">😐<span class="energy-label">OK</span></button>
+    <button class="energy-btn" onclick="setEnergy(3, this)">😊<span class="energy-label">GOOD</span></button>
+    <button class="energy-btn" onclick="setEnergy(4, this)">🔥<span class="energy-label">GREAT</span></button>
+  </div>
+
+  <div class="section-label">Quick note</div>
+  <textarea class="note-input" id="todayNote" placeholder="How did today go? Any wins or struggles..."></textarea>
+  <button class="save-btn" onclick="saveNote()">Save Note</button>
+</div>
+
+<!-- STUDY PANEL -->
+<div class="panel" id="panel-study">
+
+  <div class="section-label">Today's Study Blocks</div>
+  <div id="studyTasks"></div>
+
+  <div class="section-label">What did you learn today?</div>
+  <textarea class="note-input" id="studyNote" placeholder="Key concepts, insights, questions to follow up on..."></textarea>
+  <button class="save-btn study-btn" onclick="saveStudyNote()">Save Learning Note</button>
+
+  <div class="section-label">Recent learnings</div>
+  <div id="studyLog"></div>
+</div>
+
+<!-- PROGRESS PANEL -->
+<div class="panel" id="panel-progress">
+
+  <div class="section-label">Google Calendar</div>
+  <div class="cal-sync-card" id="calSyncCard">
+    <div class="cal-sync-status">
+      <span class="cal-dot disconnected" id="calDot"></span>
+      <span id="calStatusText">Not connected</span>
+    </div>
+    <div id="calSignedOut">
+      <button class="cal-connect-btn full" id="googleSignInBtn" onclick="handleAuthClick()">
+        <svg width="18" height="18" viewBox="0 0 18 18" style="vertical-align:middle;margin-right:8px"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Sign in with Google
+      </button>
+      <div class="cal-help" style="margin-top:10px">Sign in to sync your Google Calendar events with your daily tracker.</div>
+    </div>
+    <div id="calSignedIn" style="display:none">
+      <div id="calConnectedAs" style="font-size:12px;color:var(--accent3);margin-bottom:10px;"></div>
+      <div id="calEvents" class="cal-events-list"></div>
+      <div class="cal-sync-footer">
+        <span class="cal-last-sync" id="calLastSync"></span>
+        <button class="cal-resync-btn" onclick="fetchCalendarEvents()">Refresh ↻</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="cal-connect-btn full outline" onclick="switchAccountClick()" style="flex:1">Switch account</button>
+        <button class="cal-connect-btn full outline" onclick="handleSignoutClick()" style="flex:1">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Week</div>
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick="shiftWeek(-1, 'progress')">&#8249;</button>
+    <span class="week-nav-label" id="weekNavLabelProgress"></span>
+    <button class="week-nav-btn" onclick="shiftWeek(1, 'progress')">&#8250;</button>
+  </div>
+  <div class="week-grid" id="weekGrid"></div>
+
+  <div class="section-label">All-time Stats</div>
+  <div class="stats-grid">
+    <div class="stat-box">
+      <span class="stat-num" style="color:var(--accent1)" id="totalExercise">0</span>
+      <div class="stat-label">EXERCISE SESSIONS</div>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num" style="color:var(--accent2)" id="totalStudy">0</span>
+      <div class="stat-label">STUDY BLOCKS</div>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num" style="color:var(--gold)" id="bestStreak">0</span>
+      <div class="stat-label">BEST STREAK</div>
+    </div>
+  </div>
+
+  <div class="section-label">Exercise Log</div>
+  <div id="exerciseLog"></div>
+
+  <div class="section-label">Study Log</div>
+  <div id="progressStudyLog"></div>
+
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick=\"switchTab('today')\">
+    <span class="nav-icon">☀️</span>Today
+  </button>
+  <button class="nav-btn" onclick=\"switchTab('study')\">
+    <span class="nav-icon">📖</span>Study
+  </button>
+  <button class="nav-btn" onclick=\"switchTab('progress')\">
+    <span class="nav-icon">📊</span>Progress
+  </button>
+</nav>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const SHORT_DAYS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+const PLAN_START = '2026-02-23'; // Plan starts Monday Feb 23
+
+// ── GOOGLE CALENDAR CONFIG ─────────────────────────────────────
+// Credentials are loaded from config.js (which is NOT committed to GitHub)
+// See setup instructions for how to create config.js
+const GOOGLE_CLIENT_ID = window.TRACKER_CONFIG?.clientId || '';
+const GOOGLE_API_KEY   = window.TRACKER_CONFIG?.apiKey   || '';
+const SCOPES           = 'https://www.googleapis.com/auth/calendar.readonly';
+
+const EXERCISE_BY_DAY = {
+  Monday:    [{ name: 'Functional Training', time: '11:00 – 12:30' }],
+  Tuesday:   [{ name: 'Pilates', time: '11:00 – 12:30' }],
+  Wednesday: [{ name: 'Rest / Light Stretch', time: 'Optional' }],
+  Thursday:  [{ name: 'Yoga – Core & Abs Focus', time: '11:00 – 12:30' }],
+  Friday:    [{ name: 'Functional Training + Core', time: '11:00 – 12:30' }],
+  Saturday:  [{ name: 'Pilates + Yoga Flow', time: '6:00 – 7:00' }],
+  Sunday:    [{ name: 'Long Walk / Active Recovery', time: '6:00 – 7:00' }],
+};
+
+const STUDY_BY_DAY = {
+  Monday:    [{ name: 'AI Fundamentals / Course', time: '8:30 – 11:00' }, { name: 'PM Skills / Projects', time: '1:30 – 3:00' }],
+  Tuesday:   [{ name: 'ML Concepts / LLMs', time: '8:30 – 11:00' }, { name: 'Case Studies / Strategy', time: '1:30 – 3:00' }],
+  Wednesday: [{ name: 'Product Roadmapping / AI Tools', time: '8:30 – 11:30' }, { name: 'Quick AI session', time: '4:00 – 5:00' }],
+  Thursday:  [{ name: 'GenAI / Prompt Eng / APIs', time: '8:30 – 11:00' }, { name: 'Mock Interviews / Prep', time: '1:30 – 3:00' }],
+  Friday:    [{ name: 'Capstone / Portfolio Projects', time: '8:30 – 11:00' }, { name: 'Networking + Job Apps', time: '1:30 – 3:00' }],
+  Saturday:  [{ name: 'Light AI Study / Reading', time: '9:00 – 10:00' }, { name: 'Interview Prep', time: '10:30 – 11:30' }],
+  Sunday:    [{ name: 'AI Study / Weekly Review', time: '9:30 – 11:00' }],
+};
+
+// ─── STATE ───────────────────────────────────────────────────────
+function loadState() {
+  try {
+    const raw = localStorage.getItem('trackerState');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function saveState(state) {
+  try { localStorage.setItem('trackerState', JSON.stringify(state)); } catch(e) { console.warn('Storage unavailable:', e); }
+}
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// Active date — defaults to today, changes when user taps a week dot
+let selectedDate = getToday();
+let weekOffset = 0; // 0 = current week, -1 = last week, +1 = next week
+
+function getActiveDate() {
+  return selectedDate;
+}
+
+function setActiveDate(dateStr) {
+  selectedDate = dateStr;
+  // Update header to reflect selected day
+  const isToday = dateStr === getToday();
+  const d = new Date(dateStr + 'T12:00:00');
+  const opts = { weekday: 'long', month: 'long', day: 'numeric' };
+  const label = isToday ? 'TODAY' : d.toLocaleDateString('en-US', opts).toUpperCase();
+  const headerDate = document.getElementById('headerDate');
+  if (headerDate) headerDate.textContent = label;
+  const headerTitle = document.querySelector('.header-title');
+  if (headerTitle) {
+    if (isToday) {
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Good morning,' : hour < 17 ? 'Good afternoon,' : 'Good evening,';
+      headerTitle.innerHTML = greet + '<br><em>let\'s crush it today.</em>';
+    } else {
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+      headerTitle.innerHTML = 'Viewing <em>' + dayName + '</em>';
+    }
+  }
+  // Re-render everything for the new date
+  renderExerciseTasks();
+  renderStudyTasks();
+  updateProgressCards();
+  restoreEnergy();
+  restoreNotes();
+  renderWeekGrid();
+}
+
+function getDayData(dateStr) {
+  const state = loadState();
+  const d = state[dateStr] || {};
+  return {
+    exercise: Array.isArray(d.exercise) ? d.exercise : [],
+    study: Array.isArray(d.study) ? d.study : [],
+    energy: d.energy || 0,
+    note: d.note || '',
+    studyNote: d.studyNote || ''
+  };
+}
+
+function saveDayData(dateStr, data) {
+  const state = loadState();
+  state[dateStr] = data;
+  saveState(state);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // ── DUMMY DATA ──────────────────────────────────────────────
+  const _today = getToday();
+  const _state = loadState();
+  if (!_state[_today]) {
+    _state[_today] = {
+      exercise: [0],           // first exercise task checked off
+      study: [],
+      energy: 3,               // "Good" energy
+      note: 'Got my 30 min in this morning — felt great! Core was tough but pushed through.',
+      studyNote: ''
+    };
+    if (!_state._log) _state._log = [];
+    _state._log.unshift({
+      type: 'exercise',
+      name: 'Functional Training (30 min)',
+      time: '11:30 AM',
+      date: _today
+    });
+    saveState(_state);
+  }
+  // ── END DUMMY DATA ──────────────────────────────────────────
+
+  updateHeader();
+  renderExerciseTasks();
+  renderStudyTasks();
+  renderWeekGrid();
+  renderStats();
+  renderStudyLog();
+  renderProgressLog();
+  restoreEnergy();
+  restoreNotes();
+  updateProgressCards();
+  updateStreak();
+  initCalendar();
+});
+
+function updateHeader() {
+  const now = new Date();
+  const opts = { weekday: 'long', month: 'long', day: 'numeric' };
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-US', opts).toUpperCase();
+  const hour = now.getHours();
+  const greet = hour < 12 ? 'Good morning,' : hour < 17 ? 'Good afternoon,' : 'Good evening,';
+  document.querySelector('.header-title').innerHTML = `${greet}<br><em>let's crush it today.</em>`;
+}
+
+// ─── EXERCISE TASKS ───────────────────────────────────────────────
+function renderExerciseTasks() {
+  const activeDate = getActiveDate();
+  const d = new Date(activeDate + 'T12:00:00');
+  const dayName = DAYS[d.getDay()];
+  const tasks = EXERCISE_BY_DAY[dayName] || [];
+  const data = getDayData(activeDate);
+  const container = document.getElementById('exerciseTasks');
+  container.innerHTML = '';
+
+  tasks.forEach((task, i) => {
+    const done = data.exercise.includes(i);
+    const card = document.createElement('div');
+    card.className = 'task-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="check-circle">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2.5 7L5.5 10L11.5 4" stroke="#0f2010" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="task-info">
+        <div class="task-name">${task.name}</div>
+        <div class="task-time">${task.time}</div>
+      </div>
+      <span class="task-type type-exercise">EXERCISE</span>
+    `;
+    card.addEventListener('click', (e) => {
+      addRipple(card, e);
+      toggleExercise(i);
+    });
+    container.appendChild(card);
+  });
+
+  if (tasks.length === 0) {
+    container.innerHTML = '<div class="completed-msg">Rest day — enjoy it!</div>';
+  }
+}
+
+function toggleExercise(idx) {
+  const today = getActiveDate();
+  const data = getDayData(today);
+  const pos = data.exercise.indexOf(idx);
+  if (pos === -1) {
+    data.exercise.push(idx);
+    logActivity('exercise', EXERCISE_BY_DAY[DAYS[new Date().getDay()]][idx]?.name);
+  } else {
+    data.exercise.splice(pos, 1);
+  }
+  saveDayData(today, data);
+  renderExerciseTasks();
+  updateProgressCards();
+  renderWeekGrid();
+  renderStats();
+  renderProgressLog();
+  updateStreak();
+}
+
+// ─── STUDY TASKS ──────────────────────────────────────────────────
+function renderStudyTasks() {
+  const activeDate = getActiveDate();
+  const d = new Date(activeDate + 'T12:00:00');
+  const dayName = DAYS[d.getDay()];
+  const tasks = STUDY_BY_DAY[dayName] || [];
+  const data = getDayData(activeDate);
+  const container = document.getElementById('studyTasks');
+  container.innerHTML = '';
+
+  tasks.forEach((task, i) => {
+    const done = data.study.includes(i);
+    const card = document.createElement('div');
+    card.className = 'task-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="check-circle">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2.5 7L5.5 10L11.5 4" stroke="#0f2010" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="task-info">
+        <div class="task-name">${task.name}</div>
+        <div class="task-time">${task.time}</div>
+      </div>
+      <span class="task-type type-study">STUDY</span>
+    `;
+    card.addEventListener('click', (e) => {
+      addRipple(card, e);
+      toggleStudy(i);
+    });
+    container.appendChild(card);
+  });
+}
+
+function toggleStudy(idx) {
+  const today = getActiveDate();
+  const data = getDayData(today);
+  const pos = data.study.indexOf(idx);
+  if (pos === -1) {
+    data.study.push(idx);
+    logActivity('study', STUDY_BY_DAY[DAYS[new Date().getDay()]][idx]?.name);
+  } else {
+    data.study.splice(pos, 1);
+  }
+  saveDayData(today, data);
+  renderStudyTasks();
+  updateProgressCards();
+  renderWeekGrid();
+  renderStats();
+  renderStudyLog();
+  updateStreak();
+}
+
+// ─── PROGRESS CARDS ───────────────────────────────────────────────
+function updateProgressCards() {
+  const activeDate = getActiveDate();
+  const d = new Date(activeDate + 'T12:00:00');
+  const dayName = DAYS[d.getDay()];
+  const data = getDayData(activeDate);
+
+  const exTotal = (EXERCISE_BY_DAY[dayName] || []).length || 1;
+  const exDone = data.exercise.length;
+  document.getElementById('exerciseDone').textContent = exDone;
+  document.getElementById('exerciseGoal').textContent = `of ${exTotal} session${exTotal > 1 ? 's' : ''}`;
+  document.getElementById('exerciseCard').style.setProperty('--prog', Math.min(exDone / exTotal, 1));
+
+  const stTotal = (STUDY_BY_DAY[dayName] || []).length || 1;
+  const stDone = data.study.length;
+  document.getElementById('studyDone').textContent = stDone;
+  document.getElementById('studyGoal').textContent = `of ${stTotal} block${stTotal > 1 ? 's' : ''}`;
+  document.getElementById('studyCard').style.setProperty('--prog', Math.min(stDone / stTotal, 1));
+}
+
+// ─── WEEK GRID ────────────────────────────────────────────────────
+function renderWeekGrid() {
+  _renderWeekGridInto('weekGrid');
+  _renderWeekGridInto('weekGridToday');
+}
+
+function shiftWeek(dir, panel) {
+  weekOffset += dir;
+  renderWeekGrid();
+}
+
+function _renderWeekGridInto(gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  const today = new Date();
+  const todayStr = getToday();
+  // Find Monday of the offset week
+  const dow = today.getDay();
+  const diffToMonday = (dow === 0) ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday + (weekOffset * 7));
+
+  // Update nav labels
+  const labelId = gridId === 'weekGrid' ? 'weekNavLabelProgress' : 'weekNavLabelToday';
+  const navLabel = document.getElementById(labelId);
+  if (navLabel) {
+    if (weekOffset === 0) {
+      navLabel.textContent = 'This week';
+    } else if (weekOffset === -1) {
+      navLabel.textContent = 'Last week';
+    } else if (weekOffset === 1) {
+      navLabel.textContent = 'Next week';
+    } else {
+      const mStr = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const sun = new Date(monday); sun.setDate(monday.getDate() + 6);
+      const sStr = sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      navLabel.textContent = mStr + ' – ' + sStr;
+    }
+  }
+
+  const state = loadState();
+  grid.innerHTML = '';
+
+  // Display Mon(1) Tue(2) Wed(3) Thu(4) Fri(5) Sat(6) Sun(0)
+  const dayOrder = [1,2,3,4,5,6,0];
+  const shortLabels = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const jsDay = dayOrder[i];
+    const dayName = DAYS[jsDay];
+    const dayData = state[dateStr];
+    const exGoal = (EXERCISE_BY_DAY[dayName] || []).length;
+    const stGoal = (STUDY_BY_DAY[dayName] || []).length;
+    const exDone = dayData?.exercise?.length || 0;
+    const stDone = dayData?.study?.length || 0;
+    const isToday = dateStr === todayStr;
+    const isFuture = dateStr > todayStr;
+    const beforePlan = dateStr < PLAN_START;
+
+    let cls = 'week-dot';
+    if (dateStr === selectedDate) cls += ' selected';
+    else if (isToday) cls += ' today';
+    else if (!isFuture && !beforePlan && exGoal > 0 && stGoal > 0 && exDone >= exGoal && stDone >= stGoal) cls += ' complete';
+    else if (!isFuture && !beforePlan && (exDone > 0 || stDone > 0)) cls += ' partial';
+
+    const col = document.createElement('div');
+    col.className = 'week-day';
+
+    const dot = document.createElement('div');
+    dot.className = cls;
+    dot.textContent = d.getDate();
+    dot.dataset.date = dateStr;
+    dot.addEventListener('click', () => {
+      selectedDate = dateStr;
+      renderWeekGrid();
+      renderExerciseTasks();
+      renderStudyTasks();
+      updateProgressCards();
+      restoreEnergy();
+      restoreNotes();
+      // Switch to Today tab so user sees the updated plan
+      switchTab('today');
+      // Update header date label
+      const isActiveTdy = dateStr === todayStr;
+      const headerDate = document.getElementById('headerDate');
+      if (headerDate) {
+        if (isActiveTdy) {
+          headerDate.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+        } else {
+          headerDate.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+        }
+      }
+      const headerTitle = document.querySelector('.header-title');
+      if (headerTitle) {
+        if (isActiveTdy) {
+          const hour = new Date().getHours();
+          const greet = hour < 12 ? 'Good morning,' : hour < 17 ? 'Good afternoon,' : 'Good evening,';
+          headerTitle.innerHTML = greet + '<br><em>let\'s crush it today.</em>';
+        } else {
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+          headerTitle.innerHTML = 'Viewing <em>' + dayName + '</em>';
+        }
+      }
+    });
+
+    const label = document.createElement('div');
+    label.className = 'week-day-label';
+    label.textContent = shortLabels[i];
+
+    col.appendChild(label);
+    col.appendChild(dot);
+    grid.appendChild(col);
+  }
+}
+
+// ─── STATS ────────────────────────────────────────────────────────
+function renderStats() {
+  const state = loadState();
+  let totalEx = 0, totalSt = 0;
+  Object.values(state).forEach(d => {
+    if (d.exercise) totalEx += d.exercise.length;
+    if (d.study) totalSt += d.study.length;
+  });
+  document.getElementById('totalExercise').textContent = totalEx;
+  document.getElementById('totalStudy').textContent = totalSt;
+  document.getElementById('bestStreak').textContent = calculateBestStreak(state);
+}
+
+function calculateBestStreak(state) {
+  try {
+    const dates = Object.keys(state).filter(k => k.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
+    let best = 0, cur = 0, prev = null;
+    dates.forEach(d => {
+      const data = state[d] || {};
+      const hasActivity = (data.exercise?.length > 0) || (data.study?.length > 0);
+      if (!hasActivity) { cur = 0; prev = null; return; }
+      cur = (!prev || (new Date(d) - new Date(prev)) / 86400000 > 1) ? 1 : cur + 1;
+      best = Math.max(best, cur);
+      prev = d;
+    });
+    return best;
+  } catch(e) { return 0; }
+}
+
+function updateStreak() {
+  try {
+    const state = loadState();
+    const today = getToday();
+    let streak = 0;
+    let d = new Date();
+    for (let i = 0; i < 366; i++) {
+      const dateStr = d.toISOString().split('T')[0];
+      const data = state[dateStr] || {};
+      const hasActivity = (data.exercise?.length > 0) || (data.study?.length > 0);
+      if (!hasActivity && dateStr !== today) break;
+      if (hasActivity) streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    const sc = document.getElementById('streakCount');
+    const bs = document.getElementById('bestStreak');
+    if (sc) sc.textContent = streak;
+    if (bs) bs.textContent = calculateBestStreak(state);
+  } catch(e) { console.warn('updateStreak error:', e); }
+}
+
+// ─── ENERGY ───────────────────────────────────────────────────────
+function setEnergy(val, btn) {
+  document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const today = getActiveDate();
+  const data = getDayData(today);
+  data.energy = val;
+  saveDayData(today, data);
+}
+
+function restoreEnergy() {
+  const data = getDayData(getActiveDate());
+  if (data.energy) {
+    const btns = document.querySelectorAll('.energy-btn');
+    if (btns[data.energy - 1]) btns[data.energy - 1].classList.add('selected');
+  }
+}
+
+// ─── NOTES ────────────────────────────────────────────────────────
+function saveNote() {
+  const today = getActiveDate();
+  const data = getDayData(today);
+  data.note = document.getElementById('todayNote').value;
+  saveDayData(today, data);
+  flashSave(document.querySelector('.save-btn:not(.study-btn)'));
+}
+
+function saveStudyNote() {
+  const today = getActiveDate();
+  const data = getDayData(today);
+  data.studyNote = document.getElementById('studyNote').value;
+  saveDayData(today, data);
+  logActivity('study-note', document.getElementById('studyNote').value.slice(0, 60));
+  renderStudyLog();
+  flashSave(document.querySelector('.study-btn'));
+}
+
+function restoreNotes() {
+  const data = getDayData(getActiveDate());
+  document.getElementById('todayNote').value = data.note || '';
+  document.getElementById('studyNote').value = data.studyNote || '';
+}
+
+function flashSave(btn) {
+  const orig = btn.textContent;
+  btn.textContent = 'Saved!';
+  btn.style.opacity = '0.7';
+  setTimeout(() => { btn.textContent = orig; btn.style.opacity = '1'; }, 1500);
+}
+
+// ─── ACTIVITY LOG ─────────────────────────────────────────────────
+function logActivity(type, name) {
+  try {
+    const state = loadState();
+    if (!state._log) state._log = [];
+    state._log.unshift({ type, name: name || '', time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), date: getToday() });
+    if (state._log.length > 50) state._log = state._log.slice(0, 50);
+    saveState(state);
+  } catch(e) { console.warn('logActivity error:', e); }
+}
+
+function renderStudyLog() {
+  const state = loadState();
+  const log = (state._log || []).filter(l => l.type === 'study-note').slice(0, 5);
+  const container = document.getElementById('studyLog');
+  container.innerHTML = '';
+  if (log.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:10px 0">No learning notes yet — save one above!</div>';
+    return;
+  }
+  log.forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `<div class="log-dot study"></div><div class="log-text">${l.name}${l.name.length >= 60 ? '...' : ''}</div><div class="log-time">${l.date}</div>`;
+    container.appendChild(div);
+  });
+}
+
+function renderProgressLog() {
+  const state = loadState();
+  const exLog = (state._log || []).filter(l => l.type === 'exercise').slice(0, 8);
+  const stLog = (state._log || []).filter(l => l.type === 'study').slice(0, 8);
+
+  const exContainer = document.getElementById('exerciseLog');
+  exContainer.innerHTML = '';
+  if (exLog.length === 0) {
+    exContainer.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:10px 0">No sessions logged yet.</div>';
+  } else {
+    exLog.forEach(l => {
+      const div = document.createElement('div');
+      div.className = 'log-item';
+      div.innerHTML = `<div class="log-dot exercise"></div><div class="log-text">${l.name}</div><div class="log-time">${l.date} ${l.time}</div>`;
+      exContainer.appendChild(div);
+    });
+  }
+
+  const stContainer = document.getElementById('progressStudyLog');
+  stContainer.innerHTML = '';
+  if (stLog.length === 0) {
+    stContainer.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:10px 0">No study blocks logged yet.</div>';
+  } else {
+    stLog.forEach(l => {
+      const div = document.createElement('div');
+      div.className = 'log-item';
+      div.innerHTML = `<div class="log-dot study"></div><div class="log-text">${l.name}</div><div class="log-time">${l.date} ${l.time}</div>`;
+      stContainer.appendChild(div);
+    });
+  }
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  const tabIdx = ['today','study','progress'].indexOf(name);
+  if (tabIdx !== -1) {
+    document.querySelectorAll('.tab')[tabIdx]?.classList.add('active');
+    document.querySelectorAll('.nav-btn')[tabIdx]?.classList.add('active');
+  }
+
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+
+  if (name === 'progress') { renderWeekGrid(); renderStats(); renderProgressLog(); }
+  if (name === 'today')    { renderWeekGrid(); }
+  if (name === 'study')    { renderStudyLog(); }
+}
+
+// ─── GOOGLE CALENDAR OAUTH ───────────────────────────────────────
+
+let tokenClient = null;
+let gapiInited  = false;
+let gsiInited   = false;
+
+function gapiLoaded() {
+  gapi.load('client', async () => {
+    try {
+      await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
+      gapiInited = true;
+      maybeEnableButton();
+      // Auto-restore session if token saved
+      const saved = loadSavedToken();
+      if (saved) {
+        gapi.client.setToken(saved);
+        showSignedIn();
+        fetchCalendarEvents();
+      }
+    } catch(e) { console.warn('GAPI init error:', e); }
+  });
+}
+
+function gsiLoaded() {
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: SCOPES,
+      callback: async (resp) => {
+        if (resp.error) { console.warn('Auth error:', resp); return; }
+        const token = gapi.client.getToken();
+        // Store expiry time
+        if (token) { token.expires_at = Date.now() + (token.expires_in || 3600) * 1000; }
+        saveToken(token);
+        showSignedIn();
+        // Show which account is connected
+        try {
+          const profile = await gapi.client.request({ path: 'https://www.googleapis.com/oauth2/v2/userinfo' });
+          const email = profile.result?.email || '';
+          const el = document.getElementById('calConnectedAs');
+          if (el && email) el.textContent = 'Connected as: ' + email;
+        } catch(e) {}
+        await fetchCalendarEvents();
+      }
+    });
+    gsiInited = true;
+    maybeEnableButton();
+  } catch(e) { console.warn('GSI init error:', e); }
+}
+
+function maybeEnableButton() {
+  const btn = document.getElementById('googleSignInBtn');
+  if (btn && gapiInited && gsiInited) btn.disabled = false;
+}
+
+function handleAuthClick() {
+  if (!tokenClient) { setCalStatus('error', 'Google Sign-In not ready yet — try again in a moment'); return; }
+  // Always show account picker so user can choose which Gmail to use
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+function switchAccountClick() {
+  if (!tokenClient) return;
+  // Revoke current token first, then show account picker
+  const token = gapi.client.getToken();
+  if (token) {
+    try { google.accounts.oauth2.revoke(token.access_token, () => {}); } catch(e) {}
+    gapi.client.setToken('');
+  }
+  clearToken();
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+function handleSignoutClick() {
+  const token = gapi.client.getToken();
+  if (token) {
+    google.accounts.oauth2.revoke(token.access_token, () => {});
+    gapi.client.setToken('');
+  }
+  clearToken();
+  showSignedOut();
+  setCalStatus('disconnected', 'Not connected');
+  const todayLabel = document.getElementById('todayCalLabel');
+  const todayEvents = document.getElementById('todayCalEvents');
+  if (todayLabel) todayLabel.style.display = 'none';
+  if (todayEvents) todayEvents.innerHTML = '';
+}
+
+function showSignedIn() {
+  const out = document.getElementById('calSignedOut');
+  const inn = document.getElementById('calSignedIn');
+  if (out) out.style.display = 'none';
+  if (inn) inn.style.display = '';
+  setCalStatus('connected', 'Connected to Google Calendar');
+}
+
+function showSignedOut() {
+  const out = document.getElementById('calSignedOut');
+  const inn = document.getElementById('calSignedIn');
+  if (out) out.style.display = '';
+  if (inn) inn.style.display = 'none';
+}
+
+// ── Token persistence ────────────────────────────────────────────
+function saveToken(token) {
+  try { localStorage.setItem('gcalToken', JSON.stringify(token)); } catch(e) {}
+}
+function loadSavedToken() {
+  try {
+    const t = JSON.parse(localStorage.getItem('gcalToken') || 'null');
+    if (!t || !t.access_token) return null;
+    // Tokens expire in ~1hr; we store expiry
+    if (t.expires_at && Date.now() > t.expires_at) { clearToken(); return null; }
+    return t;
+  } catch(e) { return null; }
+}
+function clearToken() {
+  try { localStorage.removeItem('gcalToken'); } catch(e) {}
+}
+
+// ── Fetch events ─────────────────────────────────────────────────
+async function fetchCalendarEvents() {
+  setCalStatus('syncing', 'Fetching events…');
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfWeek  = new Date(startOfDay);
+    endOfWeek.setDate(startOfDay.getDate() + 7);
+
+    const response = await gapi.client.calendar.events.list({
+      calendarId: 'primary',
+      timeMin: startOfDay.toISOString(),
+      timeMax: endOfWeek.toISOString(),
+      showDeleted: false,
+      singleEvents: true,
+      maxResults: 50,
+      orderBy: 'startTime'
+    });
+
+    const events = response.result.items || [];
+    const now2 = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const lastSync = document.getElementById('calLastSync');
+    if (lastSync) lastSync.textContent = 'Last synced: ' + now2;
+    setCalStatus('connected', `Synced · ${events.length} events this week`);
+    renderGoogleEvents(events);
+  } catch(e) {
+    console.warn('Calendar fetch error:', e);
+    if (e.status === 401) {
+      clearToken();
+      showSignedOut();
+      setCalStatus('error', 'Session expired — please sign in again');
+    } else {
+      setCalStatus('error', 'Could not load events — tap Refresh to retry');
+    }
+  }
+}
+
+// ── Keywords for classification ───────────────────────────────────
+const EX_KW  = ['exercise','workout','pilates','yoga','cardio','functional','hiit','run','walk','gym','training','core','stretch'];
+const STU_KW = ['ai study','study','course','learning','ml ','genai','prompt','interview prep','portfolio','networking','linkedin','roadmap','ai pm'];
+
+function classifyEvent(title) {
+  const t = (title || '').toLowerCase();
+  if (EX_KW.some(k => t.includes(k)))  return 'exercise';
+  if (STU_KW.some(k => t.includes(k))) return 'study';
+  return 'other';
+}
+
+function isConflictTime(startStr) {
+  if (!startStr) return false;
+  const d = new Date(startStr);
+  const mins = d.getHours() * 60 + d.getMinutes();
+  // Study: 8:30-11:00 (510-660), Exercise: 11:00-12:30 (660-750)
+  return mins >= 510 && mins <= 750;
+}
+
+function fmtTime(dateStr) {
+  if (!dateStr) return 'All day';
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function fmtTimeRange(start, end) {
+  if (!start) return 'All day';
+  const s = new Date(start);
+  const e = end ? new Date(end) : null;
+  const sf = s.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const ef = e ? e.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+  return ef ? `${sf} – ${ef}` : sf;
+}
+
+function isTodayEvent(event) {
+  const todayStr = getToday();
+  const start = event.start?.dateTime || event.start?.date || '';
+  return start.startsWith(todayStr);
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderGoogleEvents(events) {
+  const todayEvents = events.filter(isTodayEvent);
+  const futureEvents = events.filter(e => !isTodayEvent(e));
+
+  // Render in Progress panel
+  const container = document.getElementById('calEvents');
+  if (container) {
+    container.innerHTML = '';
+    if (todayEvents.length === 0 && futureEvents.length === 0) {
+      container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:6px 0">No upcoming events found.</div>';
+    } else {
+      renderEventList(container, todayEvents, 'Today');
+      if (futureEvents.length > 0) renderEventList(container, futureEvents.slice(0,8), 'Coming up');
+    }
+  }
+
+  // Render in Today panel
+  const todayLabel = document.getElementById('todayCalLabel');
+  const todayContainer = document.getElementById('todayCalEvents');
+  if (todayContainer) {
+    todayContainer.innerHTML = '';
+    if (todayEvents.length > 0) {
+      if (todayLabel) todayLabel.style.display = '';
+      renderEventList(todayContainer, todayEvents, null);
+    } else {
+      if (todayLabel) todayLabel.style.display = 'none';
+    }
+  }
+}
+
+function renderEventList(container, events, groupLabel) {
+  if (groupLabel) {
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin:10px 0 6px;';
+    lbl.textContent = groupLabel;
+    container.appendChild(lbl);
+  }
+  events.forEach(ev => {
+    const title = ev.summary || '(no title)';
+    const type = classifyEvent(title);
+    const startStr = ev.start?.dateTime || ev.start?.date || '';
+    const endStr   = ev.end?.dateTime   || ev.end?.date   || '';
+    const isConflict = type === 'other' && isConflictTime(startStr);
+    const timeStr = ev.start?.date && !ev.start?.dateTime
+      ? 'All day'
+      : fmtTimeRange(startStr, endStr);
+
+    const div = document.createElement('div');
+    div.className = 'cal-event-item ' + (isConflict ? 'conflict' : type);
+    div.innerHTML = `
+      <div class="cal-event-time">${timeStr}</div>
+      <div class="cal-event-title">${title}</div>
+      <span class="cal-event-tag ${isConflict ? 'tag-conflict' : 'tag-' + type}">${isConflict ? 'MOVES THINGS' : type === 'other' ? 'EVENT' : type.toUpperCase()}</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function setCalStatus(state, text) {
+  const dot  = document.getElementById('calDot');
+  const span = document.getElementById('calStatusText');
+  if (!dot || !span) return;
+  dot.className = 'cal-dot ' + state;
+  span.textContent = text;
+}
+
+function initCalendar() {
+  // Warn if config.js is missing
+  if (!window.TRACKER_CONFIG?.clientId || window.TRACKER_CONFIG.clientId === 'YOUR_CLIENT_ID') {
+    setCalStatus('error', 'Missing config.js — see setup instructions');
+    return;
+  }
+  // Wire up GAPI and GSI once scripts are loaded
+  const waitForGapi = setInterval(() => {
+    if (typeof gapi !== 'undefined') { clearInterval(waitForGapi); gapiLoaded(); }
+  }, 100);
+  const waitForGsi = setInterval(() => {
+    if (typeof google !== 'undefined' && google.accounts) { clearInterval(waitForGsi); gsiLoaded(); }
+  }, 100);
+
+  // Restore signed-in state UI if token exists
+  if (loadSavedToken()) {
+    showSignedIn();
+    setCalStatus('syncing', 'Restoring session…');
+  }
+}
+
+// ─── RIPPLE ───────────────────────────────────────────────────────
+function addRipple(el, e) {
+  const rect = el.getBoundingClientRect();
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size/2}px;top:${e.clientY - rect.top - size/2}px`;
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 500);
+}
+</script>
+</body>
+</html>
